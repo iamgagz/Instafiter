@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Instafilter</string>
+    <string name="save">Save</string>
+    <string name="open_photo">Open Photo</string>
+</resources>
