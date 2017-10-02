@@ -25,6 +25,7 @@ class PhotoFilterActivity : AppCompatActivity() {
     companion object {
 
         val REQUEST_CODE_PHOTO_PICK = 1
+        val PERMISSION_WRITE_EXTERNAL_STORAGE = 1000
     }
 
     private val filters by lazy {
@@ -81,6 +82,18 @@ class PhotoFilterActivity : AppCompatActivity() {
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
     }
+    
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
+                                            grantResults: IntArray) {
+        when(requestCode) {
+
+            PERMISSION_WRITE_EXTERNAL_STORAGE -> {
+
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    saveImageWithPermission()
+            }
+        }
+    }
 
     private fun bindViews() {
 
@@ -129,8 +142,24 @@ class PhotoFilterActivity : AppCompatActivity() {
         intent.type = "image/*"
         startActivityForResult(intent, REQUEST_CODE_PHOTO_PICK)
     }
-
+    
     private fun saveImage() {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                              != PackageManager.PERMISSION_GRANTED ) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                alert(R.string.permission_required, R.string.write_access_needed){}
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        Array (1, {i -> Manifest.permission.WRITE_EXTERNAL_STORAGE}),
+                        PERMISSION_WRITE_EXTERNAL_STORAGE)
+            }
+        } else {
+            saveImageWithPermission()
+        }
+    }
+
+    private fun saveImageWithPermission() {
 
         val filename = "${System.currentTimeMillis()}.jpg"
         val path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
@@ -153,5 +182,13 @@ class PhotoFilterActivity : AppCompatActivity() {
             setResult(Activity.RESULT_OK)
             finish()
         }
+        
+        MediaScannerConnection.scanFile(this, arrayOf(file.toString()), null,
+                object : MediaScannerConnection.OnScanCompletedListener {
+                    override fun onScanCompleted(path: String, uri: Uri) {
+                        Log.i("ExternalStorage", "Scanned $path:")
+                        Log.i("ExternalStorage", "-> uri=" + uri)
+                    }
+                })
     }
 }
